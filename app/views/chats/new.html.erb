@@ -1,0 +1,137 @@
+<% selected = @ingredients || [] %>
+<% staples = @staples.nil? ? true : @staples %>
+
+<main class="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
+  <header class="wood-panel -mx-4 mb-8 rounded-b-3xl border-b border-wood-200 px-6 py-9 sm:-mx-6 sm:px-10">
+    <div class="flex items-center gap-4">
+      <span class="flex size-12 items-center justify-center rounded-2xl bg-terracotta-600 text-2xl shadow-soft" aria-hidden="true">🍳</span>
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-wood-500">Pantry to plate</p>
+        <h1 class="font-display text-3xl font-bold tracking-tight text-wood-900 sm:text-4xl">Recipe Helper</h1>
+      </div>
+    </div>
+    <p class="mt-5 max-w-xl leading-relaxed text-wood-700">
+      Tell us what's in your kitchen. We'll turn it into a few realistic dinners you can actually cook tonight.
+    </p>
+  </header>
+
+  <%= form_with url: chats_path, method: :post, data: { turbo: false }, class: "no-print" do %>
+    <div data-controller="ingredient-picker"
+         data-ingredient-picker-options-value="<%= IngredientCatalog.all.to_json %>"
+         data-ingredient-picker-selected-value="<%= selected.to_json %>">
+
+      <% if @error %>
+        <div id="form-error" tabindex="-1" role="alert" class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+          <p class="font-semibold">We couldn't find recipes just yet</p>
+          <p class="mt-1 text-sm"><%= @error %></p>
+        </div>
+      <% end %>
+
+      <section class="section-card" aria-labelledby="kitchen-heading">
+        <div class="flex items-center gap-3">
+          <span class="rank-badge" aria-hidden="true">1</span>
+          <h2 id="kitchen-heading" class="font-display text-xl font-bold">What's in your kitchen?</h2>
+        </div>
+        <p class="mt-1 text-sm text-wood-600">Pick from the list or type your own — anything goes.</p>
+
+        <div class="mt-6">
+          <label for="ingredient-search" class="mb-1.5 block text-sm font-semibold text-wood-800">Search ingredients</label>
+          <div class="relative">
+            <input id="ingredient-search" type="text" autocomplete="off" enterkeyhint="done"
+                   placeholder="Try chicken, tomato, rice..."
+                   role="combobox" aria-autocomplete="list" aria-controls="ingredient-results"
+                   aria-expanded="false" aria-describedby="ingredient-hint"
+                   class="min-h-12 w-full rounded-xl border border-wood-200 bg-white px-4 text-base shadow-card placeholder:text-wood-400"
+                   data-ingredient-picker-target="input"
+                   data-action="input->ingredient-picker#search keydown->ingredient-picker#keydown">
+            <div id="ingredient-results" role="listbox" aria-label="Ingredient suggestions"
+                 data-ingredient-picker-target="results"
+                 class="absolute z-20 mt-2 hidden max-h-64 w-full overflow-y-auto rounded-xl border border-wood-200 bg-white p-1 shadow-soft"></div>
+          </div>
+          <p id="ingredient-hint" class="mt-2 text-xs text-wood-500">
+            Use ↑ ↓ to browse, Enter to pick, Esc to close. Can't find it? Type it and choose “Add”.
+          </p>
+        </div>
+
+        <div class="mt-6">
+          <p class="mb-2 text-sm font-semibold text-wood-800">Quick adds</p>
+          <div class="flex flex-wrap gap-2">
+            <% ["Chicken", "Rice", "Eggs", "Tomato", "Garlic", "Onion", "Potato", "Pasta"].each do |name| %>
+              <button type="button" class="suggestion-chip" data-action="click->ingredient-picker#addSuggestion" data-name="<%= name %>">
+                <%= name %>
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="mt-6 border-t border-wood-100 pt-5">
+          <p class="mb-2 text-sm font-semibold text-wood-800">
+            Your ingredients <span data-ingredient-picker-target="count" class="text-wood-500"></span>
+          </p>
+          <div data-ingredient-picker-target="chips" class="flex min-h-11 flex-wrap gap-2"></div>
+          <p data-ingredient-picker-target="empty" class="mt-2 text-sm text-wood-500">
+            Nothing picked yet — tap a quick add or search above.
+          </p>
+        </div>
+
+        <label class="option-row mt-6">
+          <%= check_box_tag :staples, "1", staples, class: "size-5 accent-terracotta-600" %>
+          <span>
+            <span class="block text-sm font-semibold text-wood-800">Assume I have the basics</span>
+            <span class="block text-xs text-wood-500">Salt, pepper, cooking oil and water.</span>
+          </span>
+        </label>
+
+        <button type="submit" class="btn-primary mt-6 w-full" data-ingredient-picker-target="submit">
+          <span data-ingredient-picker-target="label">Find recipes</span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <p class="mt-2 text-center text-xs text-wood-500">We'll suggest 3–5 dishes, best matches first.</p>
+
+        <p data-ingredient-picker-target="status" role="status" aria-live="polite" class="sr-only"></p>
+      </section>
+
+      <div data-ingredient-picker-target="loading" role="status" aria-live="polite" class="mt-8 hidden">
+        <p class="mb-4 text-center font-display text-xl text-wood-700" data-ingredient-picker-target="message">
+          Checking what's in your kitchen…
+        </p>
+        <div class="grid gap-4 sm:grid-cols-2" aria-hidden="true">
+          <% 2.times do %>
+            <div class="recipe-card">
+              <div class="skeleton h-6 w-2/3"></div>
+              <div class="skeleton mt-4 h-4 w-1/3"></div>
+              <div class="skeleton mt-6 h-3 w-full"></div>
+              <div class="skeleton mt-2 h-3 w-5/6"></div>
+              <div class="skeleton mt-2 h-3 w-4/6"></div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div id="results" class="mt-8">
+    <% if @result&.recipes&.any? %>
+      <div class="mb-5 flex items-end justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-terracotta-600">Fresh from your kitchen</p>
+          <h2 class="font-display text-2xl font-bold">Recipes for you</h2>
+        </div>
+        <span class="text-sm text-wood-500"><%= @result.recipes.size %> ideas</span>
+      </div>
+      <div class="grid gap-5">
+        <%= render partial: "recipe_card", collection: @result.recipes, as: :recipe %>
+      </div>
+    <% elsif @result %>
+      <%= render "no_match", message: @result.message %>
+    <% elsif @answer %>
+      <article class="recipe-card markdown-body [&_h2]:mt-4 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_p]:mb-3">
+        <%= markdown(@answer) %>
+      </article>
+    <% end %>
+  </div>
+
+  <footer class="no-print mt-14 border-t border-wood-200 pt-5 text-center text-xs text-wood-500">
+    Powered by Gemini · Ingredients from TheMealDB
+  </footer>
+</main>
