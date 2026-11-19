@@ -110,26 +110,20 @@
     </div>
   <% end %>
 
-  <div id="results" class="mt-8">
-    <% if @result&.recipes&.any? %>
-      <div class="mb-5 flex items-end justify-between">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-terracotta-600">Fresh from your kitchen</p>
-          <h2 class="font-display text-2xl font-bold">Recipes for you</h2>
-        </div>
-        <span class="text-sm text-wood-500"><%= @result.recipes.size %> ideas</span>
+  <% if @token %>
+    <div data-controller="recipe-status"
+         data-recipe-status-url-value="<%= status_chat_path(@token) %>"
+         class="mt-8">
+      <p class="sr-only" role="status" aria-live="polite" data-recipe-status-target="announcer"></p>
+      <div id="results" data-recipe-status-target="results">
+        <%= render "generating" %>
       </div>
-      <div class="grid gap-5">
-        <%= render partial: "recipe_card", collection: @result.recipes, as: :recipe %>
-      </div>
-    <% elsif @result %>
-      <%= render "no_match", message: @result.message %>
-    <% elsif @answer %>
-      <article class="recipe-card markdown-body [&_h2]:mt-4 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_p]:mb-3">
-        <%= markdown(@answer) %>
-      </article>
-    <% end %>
-  </div>
+    </div>
+  <% else %>
+    <div id="results" class="mt-8">
+      <%= render "results", result: @result, answer: @answer %>
+    </div>
+  <% end %>
 
   <footer class="no-print mt-14 border-t border-wood-200 pt-5 text-center text-xs text-wood-500">
     Powered by Gemini · Ingredients from TheMealDB

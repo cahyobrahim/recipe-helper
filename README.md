@@ -54,10 +54,18 @@ home using the Google Gemini API. There is no database — the app is stateless.
 
 - `GET /` renders an ingredient picker. The ingredient list comes from TheMealDB
   via `IngredientCatalog`, cached in `tmp/ingredients.json` for 24 hours.
-- `POST /chats` builds a prompt from your selections and calls `GeminiClient`.
-  The response is rendered as structured recipe cards (or sanitized Markdown as
-  a fallback). Successful answers are cached for 24 hours, and generation is
-  capped at `GEMINI_MAX_OUTPUT_TOKENS`.
+- `POST /chats` builds a prompt from your selections and enqueues
+  `RecipeGenerationJob`, then redirects to `/chats/:token`. The page shows a
+  skeleton loader while the browser polls `GET /chats/:token/status`; when the
+  job finishes, the status endpoint returns the rendered recipe cards and they
+  are swapped in place. Job state lives in `Rails.cache` (memory store in
+  development/test, Valkey/Redis in production), so generation keeps running
+  even if the tab is closed and reopened.
+- Answers are rendered as structured recipe cards (or sanitized Markdown as a
+  fallback). Recipes include ingredient amounts and a base serving count; the
+  servings selector scales those amounts in the browser without another API call.
+  Successful answers are cached for 24 hours, and generation is capped at
+  `GEMINI_MAX_OUTPUT_TOKENS`.
 - `POST /chats` is throttled by `Rack::Attack`: 10 requests per hour per IP and
   100 per hour globally by default. Exceeding either returns a friendly 429 page
   with a `Retry-After` header. In production, counters are stored in Valkey/Redis

@@ -1,0 +1,18 @@
+<% if result&.recipes&.any? %>
+  <div class="mb-5 flex items-end justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-terracotta-600">Fresh from your kitchen</p>
+      <h2 class="font-display text-2xl font-bold">Recipes for you</h2>
+    </div>
+    <span class="text-sm text-wood-500"><%= result.recipes.size %> ideas</span>
+  </div>
+  <div class="grid gap-5">
+    <%= render partial: "recipe_card", collection: result.recipes, as: :recipe %>
+  </div>
+<% elsif result %>
+  <%= render "no_match", message: result.message %>
+<% elsif answer %>
+  <article class="recipe-card markdown-body [&_h2]:mt-4 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_p]:mb-3">
+    <%= markdown(answer) %>
+  </article>
+<% end %>

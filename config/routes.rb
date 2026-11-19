@@ -13,6 +13,10 @@ Rails.application.routes.draw do
   # root "posts#index"
 
   root "chats#new"
-  resources :chats, only: [ :new, :create ]
+  resources :chats, only: [ :new, :create, :show ] do
+    member do
+      get :status
+    end
+  end
   get "/chats", to: redirect("/")
 end
