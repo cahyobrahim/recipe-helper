@@ -1,7 +1,13 @@
 <article class="recipe-card"
-         data-controller="cook-mode clipboard"
+         data-controller="cook-mode clipboard servings"
          data-cook-mode-steps-value="<%= recipe.steps.to_json %>"
-         data-clipboard-text-value="<%= recipe.to_plain_text %>">
+         data-clipboard-text-value="<%= recipe.to_plain_text %>"
+         data-servings-name-value="<%= recipe.name %>"
+         data-servings-time-value="<%= recipe.time %>"
+         data-servings-servings-value="<%= recipe.servings || 1 %>"
+         data-servings-ingredients-value="<%= recipe.ingredients.map { |item| { name: item.name, quantity: item.quantity, unit: item.unit } }.to_json %>"
+         data-servings-missing-value="<%= recipe.missing.to_json %>"
+         data-servings-steps-value="<%= recipe.steps.to_json %>">
   <header class="flex items-start gap-3">
     <span class="rank-badge" aria-hidden="true"><%= recipe_counter + 1 %></span>
     <div class="min-w-0 flex-1">
@@ -12,7 +18,32 @@
     </div>
   </header>
 
-  <% if recipe.uses.any? %>
+  <% if recipe.ingredients.any? %>
+    <section class="mt-5 rounded-xl border border-wood-100 bg-cream-50 p-4" aria-label="Ingredients and servings">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs font-semibold uppercase tracking-wider text-wood-500">Ingredients</p>
+        <label class="no-print flex items-center gap-2 text-sm font-medium text-wood-700">
+          Servings
+          <select class="min-h-11 rounded-lg border border-wood-200 bg-white px-3 text-sm font-semibold text-wood-800"
+                  data-servings-target="select"
+                  data-action="change->servings#change">
+            <% (1..[ 12, recipe.servings.to_i + 4 ].max).each do |count| %>
+              <option value="<%= count %>" <%= "selected" if count == recipe.servings.to_i %>><%= count %></option>
+            <% end %>
+          </select>
+        </label>
+      </div>
+      <ul class="mt-3 space-y-2 text-sm text-wood-800" data-servings-target="ingredients">
+        <% recipe.ingredients.each do |ingredient| %>
+          <li class="flex gap-2">
+            <span class="w-20 shrink-0 font-semibold text-wood-900"><%= ingredient.display_amount %></span>
+            <span><%= ingredient.name %></span>
+          </li>
+        <% end %>
+      </ul>
+      <p class="sr-only" role="status" aria-live="polite" data-servings-target="announcement"></p>
+    </section>
+  <% elsif recipe.uses.any? %>
     <div class="mt-5">
       <p class="text-xs font-semibold uppercase tracking-wider text-wood-500">Uses your</p>
       <div class="mt-2 flex flex-wrap gap-1.5">
