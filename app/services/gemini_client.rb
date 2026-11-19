@@ -7,6 +7,8 @@ class GeminiClient
 
   MODELS = ENV.fetch("GEMINI_MODELS", "gemini-3.8-flash,gemini-3.6-flash").split(",").map(&:strip)
   READ_TIMEOUT = 45
+  MAX_OUTPUT_TOKENS = Integer(ENV.fetch("GEMINI_MAX_OUTPUT_TOKENS", "2048"))
+  TEMPERATURE = Float(ENV.fetch("GEMINI_TEMPERATURE", "0.7"))
 
   def initialize(api_key: ENV["GEMINI_API_KEY"])
     @api_key = api_key
@@ -43,12 +45,16 @@ class GeminiClient
 
     payload = { contents: [ { parts: [ { text: prompt } ] } ] }
     payload[:system_instruction] = { parts: [ { text: system } ] } if system
+    generation_config = {
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      temperature: TEMPERATURE,
+      candidateCount: 1
+    }
     if json_schema
-      payload[:generationConfig] = {
-        responseMimeType: "application/json",
-        responseSchema: json_schema
-      }
+      generation_config[:responseMimeType] = "application/json"
+      generation_config[:responseSchema] = json_schema
     end
+    payload[:generationConfig] = generation_config
     req.body = payload.to_json
 
     response = Net::HTTP.start(uri.host, uri.port, use_ssl: true,

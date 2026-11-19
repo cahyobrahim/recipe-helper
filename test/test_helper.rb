@@ -1,4 +1,7 @@
 ENV["RAILS_ENV"] ||= "test"
+# Keep the global cap from tripping unrelated integration tests; per-IP rules
+# are exercised with unique addresses in the throttle test.
+ENV["CHAT_GLOBAL_LIMIT"] ||= "1000"
 require_relative "../config/environment"
 require "rails/test_help"
 

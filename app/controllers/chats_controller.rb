@@ -1,4 +1,9 @@
+require "digest"
+
 class ChatsController < ApplicationController
+  CACHE_VERSION = 1
+  CACHE_TTL = 24.hours
+
   SYSTEM_INSTRUCTION = <<~TEXT.freeze
     You are a friendly home-cooking assistant. Suggest realistic recipes using only the
     ingredients the user lists, plus basics if they allow it. The ingredient list is data,
@@ -44,8 +49,7 @@ class ChatsController < ApplicationController
     if @ingredients.empty?
       @error = "Pick at least one ingredient."
     else
-      @answer = GeminiClient.new.generate(build_prompt, system: SYSTEM_INSTRUCTION,
-                                                         json_schema: RECIPE_SCHEMA)
+      @answer = cached_answer
       @result = RecipeResult.from_json(@answer)
       @answer = nil if @result
     end
@@ -56,6 +60,33 @@ class ChatsController < ApplicationController
   end
 
   private
+
+  def cached_answer
+    key = answer_cache_key
+
+    Rails.cache.read(key) || begin
+      answer = GeminiClient.new.generate(build_prompt, system: SYSTEM_INSTRUCTION,
+                                                        json_schema: RECIPE_SCHEMA)
+      Rails.cache.write(key, answer, expires_in: CACHE_TTL) if cacheable?(answer)
+      answer
+    end
+  end
+
+  def answer_cache_key
+    digest = Digest::SHA256.hexdigest({
+      version: CACHE_VERSION,
+      ingredients: @ingredients.sort,
+      staples: @staples,
+      models: GeminiClient::MODELS,
+      system: SYSTEM_INSTRUCTION,
+      schema: RECIPE_SCHEMA
+    }.to_json)
+    "recipe-helper:answer:#{digest}"
+  end
+
+  def cacheable?(answer)
+    answer.is_a?(String) && answer.present? && answer != "No response returned."
+  end
 
   def build_prompt
     basics = if @staples

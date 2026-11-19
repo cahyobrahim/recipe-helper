@@ -43,8 +43,18 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  # config.cache_store = :mem_cache_store
+  # Share the ingredient and recipe-response cache across Puma workers when
+  # REDIS_URL is provided (see config/deploy.yml). Without it Rails keeps its
+  # default per-process memory store.
+  if ENV["REDIS_URL"].present?
+    config.cache_store = :redis_cache_store, {
+      url: ENV["REDIS_URL"],
+      namespace: "recipe-helper",
+      connect_timeout: 1,
+      read_timeout: 1,
+      write_timeout: 1
+    }
+  end
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   # config.active_job.queue_adapter = :resque

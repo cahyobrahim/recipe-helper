@@ -27,6 +27,12 @@ home using the Google Gemini API. There is no database — the app is stateless.
    | --- | --- | --- |
    | `GEMINI_API_KEY` | yes | Google Gemini API key |
    | `GEMINI_MODELS` | no | Comma-separated model fallback list (default: `gemini-3.8-flash,gemini-3.6-flash`) |
+    | `GEMINI_MAX_OUTPUT_TOKENS` | no | Cap on generated tokens per request (default: `2048`) |
+    | `GEMINI_TEMPERATURE` | no | Generation temperature (default: `0.7`) |
+    | `CHAT_IP_LIMIT` / `CHAT_IP_PERIOD` | no | Per-IP request limit and window in seconds (default: `10` per `3600`) |
+    | `CHAT_GLOBAL_LIMIT` / `CHAT_GLOBAL_PERIOD` | no | Global request limit and window in seconds (default: `100` per `3600`) |
+    | `RACK_ATTACK_ENABLED` | no | Set to `false` to bypass throttling temporarily |
+    | `REDIS_URL` | production | Shared cache URL (app uses DB 0, throttles derive DB 1) |
 
    `.env` is loaded only in development and test. In production, inject
    `GEMINI_API_KEY` as a container secret (see `config/deploy.yml`).
@@ -49,7 +55,13 @@ home using the Google Gemini API. There is no database — the app is stateless.
 - `GET /` renders an ingredient picker. The ingredient list comes from TheMealDB
   via `IngredientCatalog`, cached in `tmp/ingredients.json` for 24 hours.
 - `POST /chats` builds a prompt from your selections and calls `GeminiClient`.
-  The response is rendered as sanitized Markdown.
+  The response is rendered as structured recipe cards (or sanitized Markdown as
+  a fallback). Successful answers are cached for 24 hours, and generation is
+  capped at `GEMINI_MAX_OUTPUT_TOKENS`.
+- `POST /chats` is throttled by `Rack::Attack`: 10 requests per hour per IP and
+  100 per hour globally by default. Exceeding either returns a friendly 429 page
+  with a `Retry-After` header. In production, counters are stored in Valkey/Redis
+  (DB 1) so all Puma workers share the same limits.
 
 ## Tests and checks
 
@@ -66,4 +78,8 @@ On Windows, prefix these with `ruby` (for example, `ruby bin/rails test`).
 
 Docker and Kamal scaffolding is included. Export `GEMINI_API_KEY` (or fetch it
 from your password manager) before running `bin/kamal deploy`; `.kamal/secrets`
-reads it from the environment, so no raw key is ever committed.
+reads it from the environment, so no raw key is ever committed. `config/deploy.yml`
+also starts a Valkey accessory and sets `REDIS_URL`; update the placeholder host
+`192.168.0.1` before deploying. If your app sits behind a proxy, verify that
+`REMOTE_ADDR`/`X-Forwarded-For` is configured so each visitor gets their own
+throttle bucket.

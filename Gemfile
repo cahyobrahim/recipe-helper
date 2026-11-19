@@ -6,6 +6,10 @@ gem "rails", "~> 8.1.4", ">= 8.1.4.1"
 gem "propshaft"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
+# Throttle the public recipe endpoint [https://github.com/rack/rack-attack]
+gem "rack-attack", "~> 6.8"
+# Shared cache store for throttling and response caching in production
+gem "redis", "~> 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]

@@ -51,6 +51,54 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[role=alert]", text: /Gemini is slow or busy/
   end
 
+  test "throttles repeated recipe requests from one ip" do
+    ip = "198.51.100.#{rand(1..254)}"
+    limit = Integer(ENV.fetch("CHAT_IP_LIMIT", "10"))
+
+    limit.times do
+      with_fake_gemini(fake_client(recipes_json)) do
+        post chats_path, params: { ingredients: [ "Chicken" ], staples: "1" },
+                         headers: { "REMOTE_ADDR" => ip }
+      end
+      assert_response :success
+    end
+
+    with_fake_gemini(fake_client(recipes_json)) do
+      post chats_path, params: { ingredients: [ "Chicken" ], staples: "1" },
+                       headers: { "REMOTE_ADDR" => ip }
+    end
+
+    assert_response :too_many_requests
+    assert response.headers["Retry-After"].to_i.positive?
+    assert_select "h1", "Too many recipe requests"
+  end
+
+  test "reuses a cached answer for the same ingredients" do
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+    payload = recipes_json
+    calls = 0
+    client = Object.new
+    client.define_singleton_method(:generate) do |*, **|
+      calls += 1
+      payload
+    end
+
+    with_fake_gemini(client) do
+      post chats_path, params: { ingredients: [ "Lentils", "Spinach" ], staples: "1" },
+                       headers: { "REMOTE_ADDR" => "203.0.113.10" }
+      assert_response :success
+
+      post chats_path, params: { ingredients: [ "Spinach", "Lentils" ], staples: "1" },
+                       headers: { "REMOTE_ADDR" => "203.0.113.11" }
+      assert_response :success
+    end
+
+    assert_equal 1, calls
+  ensure
+    Rails.cache = original_cache
+  end
+
   private
 
   def fake_client(response = nil, error: nil)
