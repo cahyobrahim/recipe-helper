@@ -82,6 +82,11 @@ bin/bundler-audit        # gem vulnerability scan
 
 On Windows, prefix these with `ruby` (for example, `ruby bin/rails test`).
 
+## Releases
+
+Versions are tagged on `master` and follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
 ## Deployment
 
 Docker and Kamal scaffolding is included. Export `GEMINI_API_KEY` (or fetch it
