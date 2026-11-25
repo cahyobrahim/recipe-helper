@@ -9,7 +9,7 @@ gem "puma", ">= 5.0"
 # Throttle the public recipe endpoint [https://github.com/rack/rack-attack]
 gem "rack-attack", "~> 6.8"
 # Shared cache store for throttling and response caching in production
-gem "redis", "~> 5.0"
+gem "redis", "~> 6.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
